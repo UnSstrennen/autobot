@@ -29,7 +29,7 @@ def parse_all():
             parse_auto(source)
 
 
-schedule.every(FREQUENCY).seconds.do(parse_all)
+schedule.every(FREQUENCY).minutes.do(parse_all)
 
 
 @bot.message_handler(commands=['start'])
