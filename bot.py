@@ -23,6 +23,8 @@ def parse_all():
         domain = urlparse(source).netloc
         if 'avito' in domain:
             parse_avito(source)
+        elif 'drom' in domain:
+            parse_drom(source)
 
 
 schedule.every(FREQUENCY).minutes.do(parse_all)
@@ -53,6 +55,8 @@ def new_link(message):
     domain = urlparse(link).netloc
     if 'avito' in domain:
         parse_avito(link, init=True)
+    elif 'drom' in domain:
+        parse_drom(link, init=True)
 
 
 def get_sources():
@@ -71,7 +75,9 @@ def get_was():
 
 def update_was(urls):
     with open('data/was.txt', mode='a') as f:
-        f.write('\n'.join(urls) + '\n')
+        f.write('\n'.join(urls))
+        if urls:
+            f.write('\n')
 
 def get_users():
     if not exists('data/users.txt'):
@@ -115,6 +121,31 @@ def parse_avito(search_url, init=False):
             options = [option.text.strip().replace('\xa0', ' ') for option in filter(lambda x: ''.join(ALLOWED_OPTIONS).find(x.text.split()[0].rstrip(':')) != -1, soup.findAll('li', class_='item-params-list-item'))]
             for user in get_users():
                 bot.send_message(user, '{}\n{}\n{}'.format(name, '\n'.join(options), url))
+    update_was(urls)
+
+
+def parse_drom(search_url, init=False):
+    was = get_was()
+    r = get(search_url)
+    if r.status_code != 200:
+        return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    elements = soup.findAll('span', attrs={'data-ftid': 'bull_title'})
+    urls = []
+    res = []
+    for el in elements:
+        url = el.findParent('a')['href']
+        if url in was:
+            continue
+        urls.append(url)
+        if not init:
+            r = get(url)
+            if r.status_code != 200:
+                continue
+            name = el.text
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for user in get_users():
+                bot.send_message(user, '{}\n{}'.format(name, url))
     update_was(urls)
 
 
