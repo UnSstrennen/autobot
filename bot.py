@@ -120,7 +120,6 @@ def parse_avito(search_url, init=False):
 
 if __name__ == '__main__':
     start_process()
-    print('ther')
     try:
         bot.polling(none_stop=True)
     except:
