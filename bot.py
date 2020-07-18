@@ -25,9 +25,11 @@ def parse_all():
             parse_avito(source)
         elif 'drom' in domain:
             parse_drom(source)
+        elif 'auto' in domain:
+            parse_auto(source)
 
 
-schedule.every(FREQUENCY).minutes.do(parse_all)
+schedule.every(FREQUENCY).seconds.do(parse_all)
 
 
 @bot.message_handler(commands=['start'])
@@ -57,6 +59,8 @@ def new_link(message):
         parse_avito(link, init=True)
     elif 'drom' in domain:
         parse_drom(link, init=True)
+    elif 'auto' in domain:
+        parse_auto(link, init=True)
 
 
 def get_sources():
@@ -135,6 +139,31 @@ def parse_drom(search_url, init=False):
     res = []
     for el in elements:
         url = el.findParent('a')['href']
+        if url in was:
+            continue
+        urls.append(url)
+        if not init:
+            r = get(url)
+            if r.status_code != 200:
+                continue
+            name = el.text
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for user in get_users():
+                bot.send_message(user, '{}\n{}'.format(name, url))
+    update_was(urls)
+
+
+def parse_auto(search_url, init=False):
+    was = get_was()
+    r = get(search_url)
+    if r.status_code != 200:
+        return []
+    soup = BeautifulSoup(r.text, "html.parser")
+    elements = soup.findAll('a', class_='Link ListingItemTitle-module__link')
+    urls = []
+    res = []
+    for el in elements:
+        url = el['href']
         if url in was:
             continue
         urls.append(url)
